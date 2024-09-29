@@ -1,3 +1,5 @@
+@php /** @var \Aws\Result $authRes */  @endphp
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -8,8 +10,6 @@
 </head>
 <body>
 <h2>Login Successfully.</h2>
-@php /** @var \Aws\Result $authRes */  @endphp
-<code>{{$authRes}}</code>
 <dl>
     <dt>access token</dt>
     <dd>{{ $authRes['AuthenticationResult']['AccessToken'] }}</dd>
