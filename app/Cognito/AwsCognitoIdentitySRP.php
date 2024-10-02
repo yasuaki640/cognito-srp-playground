@@ -202,42 +202,11 @@ class AwsCognitoIdentitySRP
     }
 
     /**
-     * Authenticate user with given username and password.
-     *
-     *
-     * @throws RuntimeException|RandomException
-     */
-    public function authenticateUser(string $username, string $password): Result
-    {
-        $result = $this->client->adminInitiateAuth([
-            'AuthFlow' => 'USER_SRP_AUTH',
-            'ClientId' => $this->clientId,
-            'UserPoolId' => $this->poolId,
-            'AuthParameters' => [
-                'USERNAME' => $username,
-                'SRP_A' => $this->largeA()->toHex(),
-                'SECRET_HASH' => $this->cognitoSecretHash($username),
-            ],
-        ]);
-
-        if ($result->get('ChallengeName') != 'PASSWORD_VERIFIER') {
-            throw new RuntimeException("ChallengeName `{$result->get('ChallengeName')}` is not supported.");
-        }
-
-        return $this->client->adminRespondToAuthChallenge([
-            'ChallengeName' => 'PASSWORD_VERIFIER',
-            'UserPoolId' => $this->poolId,
-            'ClientId' => $this->clientId,
-            'ChallengeResponses' => $this->processChallenge($result, $username, $password),
-        ]);
-    }
-
-    /**
      * Generate authentication challenge response params.
      *
      * @throws RandomException
      */
-    protected function processChallenge(
+    public function processChallenge(
         Result $result,
         string $username,
         string $password
@@ -308,7 +277,7 @@ class AwsCognitoIdentitySRP
      *
      * @copyright https://www.blackbits.io/blog/laravel-authentication-with-aws-cognito
      */
-    protected function cognitoSecretHash(string $username): string
+    public function cognitoSecretHash(string $username): string
     {
         return $this->hashClientSecret($username.config('aws.cognito.client_id'));
     }

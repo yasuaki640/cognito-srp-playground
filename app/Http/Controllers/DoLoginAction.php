@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Cognito\AWSCognitoIdentitySRP;
+use App\Cognito\AwsCognitoIdentitySRP;
 use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
 use Illuminate\Http\Request;
 use Random\RandomException;
@@ -27,16 +27,32 @@ class DoLoginAction extends Controller
             ],
         ]);
 
-        $srpClient = new AWSCognitoIdentitySRP(
+        $srpClient = new AwsCognitoIdentitySRP(
             $client,
             config('aws.cognito.client_id'),
             config('aws.cognito.user_pool_id')
         );
 
-        $authRes = $srpClient->authenticateUser(
-            $request->get('username'),
-            $request->get('password')
-        );
+        $username = $request->get('username');
+
+        $result = $client->adminInitiateAuth([
+            'AuthFlow' => 'USER_SRP_AUTH',
+            'ClientId' => config('aws.cognito.client_id'),
+            'UserPoolId' => config('aws.cognito.user_pool_id'),
+            'AuthParameters' => [
+                'USERNAME' => $username,
+                'SRP_A' => $srpClient->largeA()->toHex(),
+                'SECRET_HASH' => $srpClient->cognitoSecretHash($username),
+            ],
+        ]);
+
+        $password = $request->get('password');
+        $authRes = $client->adminRespondToAuthChallenge([
+            'ChallengeName' => 'PASSWORD_VERIFIER',
+            'UserPoolId' => config('aws.cognito.user_pool_id'),
+            'ClientId' => config('aws.cognito.client_id'),
+            'ChallengeResponses' => $srpClient->processChallenge($result, $username, $password),
+        ]);
 
         return view('top', compact('authRes'));
     }
