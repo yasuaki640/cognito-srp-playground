@@ -78,7 +78,7 @@ class AwsCognitoIdentitySRP
      *
      * @throws RandomException
      */
-    public function smallA(): BigInteger
+    private function smallA(): BigInteger
     {
         if (is_null($this->a)) {
             $this->a = $this->generateRandomSmallA();
@@ -106,7 +106,7 @@ class AwsCognitoIdentitySRP
      *
      * @throws RandomException
      */
-    public function bytes(int $bytes = 32): BigInteger
+    private function bytes(int $bytes = 32): BigInteger
     {
         $bytes = bin2hex(random_bytes($bytes));
 
@@ -116,7 +116,7 @@ class AwsCognitoIdentitySRP
     /**
      * Converts a BigInteger (or hex string) to hex format padded with zeroes for hashing.
      */
-    public function padHex(BigInteger|string $longInt): string
+    private function padHex(BigInteger|string $longInt): string
     {
         $hashStr = $longInt instanceof BigInteger ? $longInt->toHex() : $longInt;
 
@@ -132,7 +132,7 @@ class AwsCognitoIdentitySRP
     /**
      * Calculate a hash from a hex string.
      */
-    public function hexHash(string $value): string
+    private function hexHash(string $value): string
     {
         return $this->hash(hex2bin($value));
     }
@@ -140,7 +140,7 @@ class AwsCognitoIdentitySRP
     /**
      * Calculate a hash from string.
      */
-    public function hash(string $value): string
+    private function hash(string $value): string
     {
         $hash = hash('sha256', $value);
 
@@ -150,7 +150,7 @@ class AwsCognitoIdentitySRP
     /**
      * Performs modulo between big integers.
      */
-    protected function mod(BigInteger $a, BigInteger $b): BigInteger
+    private function mod(BigInteger $a, BigInteger $b): BigInteger
     {
         return $a->powMod(new BigInteger(1), $b);
     }
@@ -160,7 +160,7 @@ class AwsCognitoIdentitySRP
      *
      * @throws RandomException
      */
-    public function generateRandomSmallA(): BigInteger
+    private function generateRandomSmallA(): BigInteger
     {
         return $this->mod($this->bytes(128), $this->N);
     }
@@ -171,7 +171,7 @@ class AwsCognitoIdentitySRP
      *
      * @throws InvalidArgumentException
      */
-    public function calculateA(BigInteger $a): BigInteger
+    private function calculateA(BigInteger $a): BigInteger
     {
         $A = $this->g->powMod($a, $this->N);
 
@@ -185,7 +185,7 @@ class AwsCognitoIdentitySRP
     /**
      * Calculate the client's value U which is the hash of A and B.
      */
-    public function calculateU(BigInteger $A, BigInteger $B): BigInteger
+    private function calculateU(BigInteger $A, BigInteger $B): BigInteger
     {
         $A = $this->padHex($A);
         $B = $this->padHex($B);
@@ -196,40 +196,9 @@ class AwsCognitoIdentitySRP
     /**
      * Extract the pool ID from pool name.
      */
-    protected function poolId(): ?string
+    private function poolId(): ?string
     {
         return explode('_', $this->poolId)[1] ?? null;
-    }
-
-    /**
-     * Authenticate user with given username and password.
-     *
-     *
-     * @throws RuntimeException|RandomException
-     */
-    public function authenticateUser(string $username, string $password): Result
-    {
-        $result = $this->client->adminInitiateAuth([
-            'AuthFlow' => 'USER_SRP_AUTH',
-            'ClientId' => $this->clientId,
-            'UserPoolId' => $this->poolId,
-            'AuthParameters' => [
-                'USERNAME' => $username,
-                'SRP_A' => $this->largeA()->toHex(),
-                'SECRET_HASH' => $this->cognitoSecretHash($username),
-            ],
-        ]);
-
-        if ($result->get('ChallengeName') != 'PASSWORD_VERIFIER') {
-            throw new RuntimeException("ChallengeName `{$result->get('ChallengeName')}` is not supported.");
-        }
-
-        return $this->client->adminRespondToAuthChallenge([
-            'ChallengeName' => 'PASSWORD_VERIFIER',
-            'UserPoolId' => $this->poolId,
-            'ClientId' => $this->clientId,
-            'ChallengeResponses' => $this->processChallenge($result, $username, $password),
-        ]);
     }
 
     /**
@@ -237,7 +206,7 @@ class AwsCognitoIdentitySRP
      *
      * @throws RandomException
      */
-    protected function processChallenge(
+    public function processChallenge(
         Result $result,
         string $username,
         string $password
@@ -272,7 +241,7 @@ class AwsCognitoIdentitySRP
      *
      * @throws RuntimeException|RandomException
      */
-    protected function getPasswordAuthenticationKey(string $username, string $password, string $server, string $salt): string
+    private function getPasswordAuthenticationKey(string $username, string $password, string $server, string $salt): string
     {
         $u = $this->calculateU($this->largeA(), $serverB = new BigInteger($server, 16));
 
@@ -297,7 +266,7 @@ class AwsCognitoIdentitySRP
     /**
      * Standard hkdf algorithm.
      */
-    protected function computeHkdf(string $ikm, string $salt): string
+    private function computeHkdf(string $ikm, string $salt): string
     {
         return hash_hkdf('sha256', $ikm, 16, static::INFO_BITS, $salt);
     }
@@ -308,7 +277,7 @@ class AwsCognitoIdentitySRP
      *
      * @copyright https://www.blackbits.io/blog/laravel-authentication-with-aws-cognito
      */
-    protected function cognitoSecretHash(string $username): string
+    public function cognitoSecretHash(string $username): string
     {
         return $this->hashClientSecret($username.config('aws.cognito.client_id'));
     }
@@ -319,7 +288,7 @@ class AwsCognitoIdentitySRP
      *
      * @copyright https://www.blackbits.io/blog/laravel-authentication-with-aws-cognito
      */
-    protected function hashClientSecret(string $message): string
+    private function hashClientSecret(string $message): string
     {
         $hash = hash_hmac(
             'sha256',
