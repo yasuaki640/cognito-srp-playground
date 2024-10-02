@@ -48,7 +48,9 @@ class AwsCognitoIdentitySRP
 
     protected ?BigInteger $A;
 
-    protected string $clientId;
+    private string $clientId;
+
+    private ?string $clientSecret;
 
     protected string $poolId;
 
@@ -59,8 +61,12 @@ class AwsCognitoIdentitySRP
      *
      * @return void
      */
-    public function __construct(CognitoIdentityProviderClient $client, string $clientId, string $poolId)
-    {
+    public function __construct(
+        CognitoIdentityProviderClient $client,
+        string $clientId,
+        string $poolId,
+        ?string $clientSecret = null
+    ) {
         $this->N = new BigInteger(static::N_HEX, 16);
         $this->g = new BigInteger(static::G_HEX, 16);
         $this->k = new BigInteger($this->hexHash('00'.static::N_HEX.'0'.static::G_HEX), 16);
@@ -70,6 +76,7 @@ class AwsCognitoIdentitySRP
 
         $this->client = $client;
         $this->clientId = $clientId;
+        $this->clientSecret = $clientSecret;
         $this->poolId = $poolId;
     }
 
@@ -279,7 +286,7 @@ class AwsCognitoIdentitySRP
      */
     public function cognitoSecretHash(string $username): string
     {
-        return $this->hashClientSecret($username.config('aws.cognito.client_id'));
+        return $this->hashClientSecret($username.$this->clientId);
     }
 
     /**
@@ -287,13 +294,20 @@ class AwsCognitoIdentitySRP
      *
      *
      * @copyright https://www.blackbits.io/blog/laravel-authentication-with-aws-cognito
+     *
+     * @throws \Exception
      */
     private function hashClientSecret(string $message): string
     {
+        if ($this->clientSecret === null) {
+            // TODO: 専用のexceptionクラスを作る
+            throw new \Exception('If the user pool has a client secret set, you must pass the `$clientSecret` argument to the constructor');
+        }
+
         $hash = hash_hmac(
             'sha256',
             $message,
-            config('aws.cognito.client_secret'),
+            $this->clientSecret,
             true
         );
 
