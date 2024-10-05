@@ -207,12 +207,17 @@ class AwsCognitoIdentitySRP
      * Generate authentication challenge response params.
      *
      * @throws RandomException
+     * @throws \Exception
      */
     public function processChallenge(
         Result $result,
         string $username,
         string $password
     ): array {
+        if ($result->get('ChallengeName') != 'PASSWORD_VERIFIER') {
+            throw new \Exception("ChallengeName `{$result->get('ChallengeName')}` is not supported.");
+        }
+
         $challengeParameters = $result->get('ChallengeParameters');
         $time = Carbon::now('UTC')->format('D M j H:i:s e Y');
         $secretBlock = base64_decode($challengeParameters['SECRET_BLOCK']);
@@ -275,9 +280,6 @@ class AwsCognitoIdentitySRP
 
     /**
      * Creates the Cognito secret hash
-     *
-     *
-     * @copyright https://www.blackbits.io/blog/laravel-authentication-with-aws-cognito
      */
     public function cognitoSecretHash(string $username): string
     {
@@ -286,9 +288,6 @@ class AwsCognitoIdentitySRP
 
     /**
      * Creates a HMAC from a string
-     *
-     *
-     * @copyright https://www.blackbits.io/blog/laravel-authentication-with-aws-cognito
      *
      * @throws \Exception
      */

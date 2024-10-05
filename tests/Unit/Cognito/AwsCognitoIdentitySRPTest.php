@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Cognito;
 
 use App\Cognito\AwsCognitoIdentitySRP;
-use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
 use Aws\Result;
 use Carbon\Carbon;
 use phpseclib3\Math\BigInteger;
@@ -25,8 +24,6 @@ class AwsCognitoIdentitySRPTest extends TestCase
     }
 
     /**
-     * TODO: 書きすぎなテストなので後で消す
-     *
      * @throws RandomException
      */
     public function test_calculate_largeA(): void
@@ -45,15 +42,6 @@ class AwsCognitoIdentitySRPTest extends TestCase
 
     public function test_cognitoSecretHash_returns_hash_string(): void
     {
-        $cognitoClient = new CognitoIdentityProviderClient([
-            'version' => 'latest',
-            'region' => 'ap-northeast-1',
-            'credentials' => [
-                'key' => 'dummy-key',
-                'secret' => 'dummy-secret',
-            ],
-        ]);
-
         $this->srpHelper = new AwsCognitoIdentitySRP(
             'dummy-client-id',
             'dummy-pool-id',
@@ -62,6 +50,24 @@ class AwsCognitoIdentitySRPTest extends TestCase
 
         $hash = $this->srpHelper->cognitoSecretHash('dummy-username');
         $this->assertSame($hash, 'YkR2p+39v97xkgQcaTJGOZYbowLDT1KQOkJr6YNUI3E=');
+    }
+
+    /**
+     * @throws RandomException
+     */
+    public function test_fail_processChallenge_if_unsupported_challengeName_given(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('ChallengeName `SMS_MFA` is not supported.');
+
+        $this->srpHelper = new AwsCognitoIdentitySRP(
+            'dummy-client-id',
+            'dummy-pool-id',
+            'dummy-client-secret'
+        );
+        $mockResult = new Result(['ChallengeName' => 'SMS_MFA']);
+
+        $this->srpHelper->processChallenge($mockResult, 'username', 'password');
     }
 
     /**
@@ -78,6 +84,7 @@ class AwsCognitoIdentitySRPTest extends TestCase
             'dummy-client-secret'
         );
         $mockResult = new Result([
+            'ChallengeName' => 'PASSWORD_VERIFIER',
             'ChallengeParameters' => [
                 'SALT' => '3b9cadfa7530456cc432931b15bf9951',
                 'SECRET_BLOCK' => '0',

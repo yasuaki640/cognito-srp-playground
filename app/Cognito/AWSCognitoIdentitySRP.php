@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Cognito;
 
-use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
 use Aws\Result;
 use Carbon\Carbon;
 use InvalidArgumentException;
@@ -54,15 +53,12 @@ class AwsCognitoIdentitySRP
 
     protected string $poolId;
 
-    protected CognitoIdentityProviderClient $client;
-
     /**
      * Create new AWS CognitoIDP instance.
      *
      * @return void
      */
     public function __construct(
-        CognitoIdentityProviderClient $client,
         string $clientId,
         string $poolId,
         ?string $clientSecret = null
@@ -74,7 +70,6 @@ class AwsCognitoIdentitySRP
         $this->a = null;
         $this->A = null;
 
-        $this->client = $client;
         $this->clientId = $clientId;
         $this->clientSecret = $clientSecret;
         $this->poolId = $poolId;
@@ -212,12 +207,17 @@ class AwsCognitoIdentitySRP
      * Generate authentication challenge response params.
      *
      * @throws RandomException
+     * @throws \Exception
      */
     public function processChallenge(
         Result $result,
         string $username,
         string $password
     ): array {
+        if ($result->get('ChallengeName') != 'PASSWORD_VERIFIER') {
+            throw new \Exception("ChallengeName `{$result->get('ChallengeName')}` is not supported.");
+        }
+
         $challengeParameters = $result->get('ChallengeParameters');
         $time = Carbon::now('UTC')->format('D M j H:i:s e Y');
         $secretBlock = base64_decode($challengeParameters['SECRET_BLOCK']);
@@ -280,9 +280,6 @@ class AwsCognitoIdentitySRP
 
     /**
      * Creates the Cognito secret hash
-     *
-     *
-     * @copyright https://www.blackbits.io/blog/laravel-authentication-with-aws-cognito
      */
     public function cognitoSecretHash(string $username): string
     {
@@ -291,9 +288,6 @@ class AwsCognitoIdentitySRP
 
     /**
      * Creates a HMAC from a string
-     *
-     *
-     * @copyright https://www.blackbits.io/blog/laravel-authentication-with-aws-cognito
      *
      * @throws \Exception
      */

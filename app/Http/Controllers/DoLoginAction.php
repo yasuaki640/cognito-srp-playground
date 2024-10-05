@@ -28,9 +28,9 @@ class DoLoginAction extends Controller
         ]);
 
         $srpClient = new AwsCognitoIdentitySRP(
-            $client,
             config('aws.cognito.client_id'),
-            config('aws.cognito.user_pool_id')
+            config('aws.cognito.user_pool_id'),
+            config('aws.cognito.client_secret')
         );
 
         $username = $request->get('username');
