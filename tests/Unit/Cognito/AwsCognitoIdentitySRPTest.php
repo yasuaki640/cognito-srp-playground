@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Cognito;
 
 use App\Cognito\AwsCognitoIdentitySRP;
@@ -16,17 +18,7 @@ class AwsCognitoIdentitySRPTest extends TestCase
 
     protected function setUp(): void
     {
-        $cognitoClient = new CognitoIdentityProviderClient([
-            'version' => 'latest',
-            'region' => 'ap-northeast-1',
-            'credentials' => [
-                'key' => 'dummy-key',
-                'secret' => 'dummy-secret',
-            ],
-        ]);
-
         $this->srpHelper = new AwsCognitoIdentitySRP(
-            $cognitoClient,
             'dummy-client-id',
             'dummy-pool-id'
         );
@@ -63,7 +55,6 @@ class AwsCognitoIdentitySRPTest extends TestCase
         ]);
 
         $this->srpHelper = new AwsCognitoIdentitySRP(
-            $cognitoClient,
             'dummy-client-id',
             'dummy-pool-id',
             'dummy-client-secret'
@@ -81,17 +72,7 @@ class AwsCognitoIdentitySRPTest extends TestCase
         $mockNow = Carbon::create(2024, 10, 2)->setTimezone('UTC');
         Carbon::setTestNow($mockNow);
 
-        $cognitoClient = new CognitoIdentityProviderClient([
-            'version' => 'latest',
-            'region' => 'ap-northeast-1',
-            'credentials' => [
-                'key' => 'dummy-key',
-                'secret' => 'dummy-secret',
-            ],
-        ]);
-
         $this->srpHelper = new AwsCognitoIdentitySRP(
-            $cognitoClient,
             'dummy-client-id',
             'dummy-pool-id',
             'dummy-client-secret'

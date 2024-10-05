@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Cognito;
 
-use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
 use Aws\Result;
 use Carbon\Carbon;
 use InvalidArgumentException;
@@ -54,15 +53,12 @@ class AwsCognitoIdentitySRP
 
     protected string $poolId;
 
-    protected CognitoIdentityProviderClient $client;
-
     /**
      * Create new AWS CognitoIDP instance.
      *
      * @return void
      */
     public function __construct(
-        CognitoIdentityProviderClient $client,
         string $clientId,
         string $poolId,
         ?string $clientSecret = null
@@ -74,7 +70,6 @@ class AwsCognitoIdentitySRP
         $this->a = null;
         $this->A = null;
 
-        $this->client = $client;
         $this->clientId = $clientId;
         $this->clientSecret = $clientSecret;
         $this->poolId = $poolId;
